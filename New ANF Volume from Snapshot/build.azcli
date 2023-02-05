@@ -1,0 +1,35 @@
+#!/bin/bash
+timestamp=$(date +%y%m%d_%H%M%S)
+RG=emea-core-south-uk-anf
+ACC=core-south-uk
+POOL=flex-testing
+POOL_GROW=6
+VOL1=vol1
+VOL_GROW=200
+THROUGHPUT_GROW=32
+VOL1_SNAP_NAME="$VOL1"_Snapshot_
+VOL1_SNAP_LOCATION=uksouth
+
+
+
+# Create Volume Snapshot
+az netappfiles snapshot create \
+--resource-group $RG \
+--account-name $ACC \
+--pool-name $POOL \
+--volume-name $VOL1 \
+--name $VOL1_SNAP_NAME$timestamp \
+-l $VOL1_SNAP_LOCATION
+echo Snapshot ID
+# Get Snapshot ID
+
+VOL1_SNAPSHOT_ID=$(az netappfiles snapshot show \
+-g $RG  \
+--account-name $ACC \
+--pool-name $POOL \
+--volume-name $VOL1 \
+--name $VOL1_SNAP_NAME$timestamp \
+-o tsv \
+--query snapshotId)
+
+echo $VOL1_SNAPSHOT_ID

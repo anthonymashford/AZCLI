@@ -1,0 +1,52 @@
+#!/bin/bash
+# Set Variables below
+timestamp=$(date +%y%m%d_%H%M%S)
+RESOURCE_GROUP="rg-anf-lab"
+LOCATION="uksouth"
+ANF_ACCOUNT_NAME="uks-anf-lab"
+POOL_NAME="uks-cap-anf-lab"
+POOL_SIZE_TiB=4
+VOL1_NAME="vol1"
+VOL2_NAME="vol2"
+SERVICE_LEVEL="Standard" 
+VNET_NAME="vnet-uks-anf-lab"
+SUBNET_NAME="snet-uks-anf-lab"
+VOL1_SIZE_GiB=100
+VOL2_SIZE_GiB=200
+VOL1_SNAP_NAME="$VOL1_NAME"_Snapshot_
+VOL1_UNIQUE_FILE_PATH="vol1"
+VOL2_UNIQUE_FILE_PATH="vol2"
+
+# Create Volume Snapshot
+az netappfiles snapshot create \
+--resource-group $RESOURCE_GROUP \
+--account-name $ANF_ACCOUNT_NAME \
+--pool-name $POOL_NAME \
+--volume-name $VOL1_NAME \
+--name $VOL1_SNAP_NAME$timestamp \
+-l $LOCATION
+
+VOL1_SNAPSHOT_ID=$(az netappfiles snapshot show \
+    --resource-group $RESOURCE_GROUP  \
+    --account-name $ANF_ACCOUNT_NAME \
+    --pool-name $POOL_NAME \
+    --volume-name $VOL1_NAME \
+    --name $VOL1_SNAP_NAME$timestamp \
+    -o tsv \
+    --query snapshotId)
+
+echo Vol1 Snapshot ID = $VOL1_SNAPSHOT_ID
+
+az netappfiles volume create \
+    --resource-group $RESOURCE_GROUP \
+    --location $LOCATION \
+    --account-name $ANF_ACCOUNT_NAME \
+    --pool-name $POOL_NAME \
+    --name $VOL2_NAME \
+    --service-level $SERVICE_LEVEL \
+    --vnet $VNET_NAME \
+    --subnet $SUBNET_NAME \
+    --snapshot-id $VOL1_SNAPSHOT_ID \
+    --usage-threshold $VOL2_SIZE_GiB \
+    --file-path $VOL2_UNIQUE_FILE_PATH \
+    --protocol-types "NFSv3"

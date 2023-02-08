@@ -1,0 +1,62 @@
+#!/bin/bash
+timestamp=$(date +%y%m%d_%H%M%S)
+RG=emea-core-south-uk-anf
+ACC=core-south-uk
+POOL=flex-testing
+POOL_GROW=6
+VOL1=vol1
+VOL2=vol2
+VOL_GROW=200
+THROUGHPUT_GROW=32
+VOL1_SNAP_NAME="$VOL1"_snapshot_
+VOL1_SNAP_LOCATION=uksouth
+VOL2_LOCATION=uksouth
+VOL2_SERVICE_TIER=standard
+VOL2_VNET="/subscriptions/a03cfa5e-a233-4b82-9946-6aafa420e1e4/resourceGroups/emea-core-south-uk/providers/Microsoft.Network/virtualNetworks/uk-south-hub" 
+VOL2_SUBNET="/subscriptions/a03cfa5e-a233-4b82-9946-6aafa420e1e4/resourceGroups/emea-core-south-uk/providers/Microsoft.Network/virtualNetworks/uk-south-hub/subnets/anf"
+VOL2_PROTOCOL=NFSv3
+VOL2_FILE_PATH=vol2_share
+
+# Grow capacity pool
+az netappfiles pool update \
+ --resource-group $RG \
+ --account-name $ACC \
+ --name $POOL \
+ --size $POOL_GROW
+
+# Create Volume Snapshot
+az netappfiles snapshot create \
+--resource-group $RG \
+--account-name $ACC \
+--pool-name $POOL \
+--volume-name $VOL1 \
+--name $VOL1_SNAP_NAME$timestamp \
+-l $VOL1_SNAP_LOCATION
+echo Snapshot ID
+# Get Snapshot ID
+VOL1_SNAPSHOT_ID=$(az netappfiles snapshot show \
+--resource-group $RG  \
+--account-name $ACC \
+--pool-name $POOL \
+--volume-name $VOL1 \
+--name $VOL1_SNAP_NAME$timestamp \
+-o tsv \
+--query snapshotId)
+
+echo Volume Snapshot ID = $VOL1_SNAPSHOT_ID
+
+# Create new volume
+az netappfiles volume create \
+--resource-group $RG \
+--account-name $ACC \
+--pool-name $POOL \
+--volume-name $VOl2 \
+-l $VOL2_LOCATION \
+--snapshot-id $VOL1_SNAPSHOT_ID
+--service-level $VOL2_SERVICE_TIER \
+--usage-threshold $VOL_GROW \
+--throughput-mibps $THROUGHPUT_GROW
+--file-path $VOL2_FILE_PATH \
+--vnet $VOL2_VNET \
+--subnet $VOL2_SUBNET \
+--protocol-types $VOL2_PROTOCOL \

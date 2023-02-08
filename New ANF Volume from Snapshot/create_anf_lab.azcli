@@ -1,0 +1,81 @@
+#!/bin/bash
+# Set Variables below
+timestamp=$(date +%y%m%d_%H%M%S)
+RESOURCE_GROUP="rg-anf-lab"
+LOCATION="uksouth"
+ANF_ACCOUNT_NAME="uks-anf-lab"
+POOL_NAME="uks-cap-anf-lab"
+POOL_SIZE_TiB=4
+VOL_NAME="vol1"
+SERVICE_LEVEL="Standard" 
+VNET_NAME="vnet-uks-anf-lab"
+SUBNET_NAME="snet-uks-anf-lab"
+VOLUME_SIZE_GiB=100 
+UNIQUE_FILE_PATH="vol1"
+VOL1_SNAP_NAME="$VOL_NAME"_Snapshot_
+
+
+az group create \
+    --name $RESOURCE_GROUP \
+    --location $LOCATION
+
+az netappfiles account create \
+    --resource-group $RESOURCE_GROUP \
+    --location $LOCATION \
+    --account-name $ANF_ACCOUNT_NAME
+
+az netappfiles pool create \
+    --resource-group $RESOURCE_GROUP \
+    --location $LOCATION \
+    --account-name $ANF_ACCOUNT_NAME \
+    --pool-name $POOL_NAME \
+    --size $POOL_SIZE_TiB \
+    --service-level $SERVICE_LEVEL
+
+az network vnet create \
+    --resource-group $RESOURCE_GROUP \
+    --name $VNET_NAME \
+    --location $LOCATION \
+    --address-prefix "10.7.0.0/16"
+
+az network vnet subnet create \
+    --resource-group $RESOURCE_GROUP \
+    --vnet-name $VNET_NAME \
+    --name $SUBNET_NAME \
+    --address-prefixes "10.7.0.0/24" \
+    --delegations "Microsoft.NetApp/volumes"
+
+VNET_ID=$(az network vnet show --resource-group $RESOURCE_GROUP --name $VNET_NAME --query "id" -o tsv)
+SUBNET_ID=$(az network vnet subnet show --resource-group $RESOURCE_GROUP --name $SUBNET_NAME --vnet-name $VNET_NAME --query "id" -o tsv)
+az netappfiles volume create \
+    --resource-group $RESOURCE_GROUP \
+    --location $LOCATION \
+    --account-name $ANF_ACCOUNT_NAME \
+    --pool-name $POOL_NAME \
+    --name "vol1" \
+    --service-level $SERVICE_LEVEL \
+    --vnet $VNET_NAME \
+    --subnet $SUBNET_NAME \
+    --usage-threshold $VOLUME_SIZE_GiB \
+    --file-path $UNIQUE_FILE_PATH \
+    --protocol-types "NFSv3"
+
+# Create Volume Snapshot
+az netappfiles snapshot create \
+--resource-group $RESOURCE_GROUP \
+--account-name $ANF_ACCOUNT_NAME \
+--pool-name $POOL_NAME \
+--volume-name $VOL_NAME \
+--name $VOL1_SNAP_NAME$timestamp \
+-l $LOCATION
+
+VOL1_SNAPSHOT_ID=$(az netappfiles snapshot show \
+-g $RESOURCE_GROUP  \
+--account-name $ANF_ACCOUNT_NAME \
+--pool-name $POOL_NAME \
+--volume-name $VOL_NAME \
+--name $VOL1_SNAP_NAME$timestamp \
+-o tsv \
+--query snapshotId)
+echo Vol1 Snapshot ID
+echo $VOL1_SNAPSHOT_ID

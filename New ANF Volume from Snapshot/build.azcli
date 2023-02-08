@@ -10,8 +10,6 @@ THROUGHPUT_GROW=32
 VOL1_SNAP_NAME="$VOL1"_Snapshot_
 VOL1_SNAP_LOCATION=uksouth
 
-
-
 # Create Volume Snapshot
 az netappfiles snapshot create \
 --resource-group $RG \

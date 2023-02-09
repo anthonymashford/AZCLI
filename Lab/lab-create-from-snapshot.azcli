@@ -90,8 +90,6 @@ VOL1_SNAPSHOT_ID=$(az netappfiles snapshot show \
     --name $VOL1_SNAP_NAME$timestamp \
     -o tsv \
     --query snapshotId)
-# Echo that SnapshotID of volume 1
-echo Vol1 Snapshot ID = $VOL1_SNAPSHOT_ID
 # Create Azure NetApp Files volume 2 from Snapshot
 az netappfiles volume create \
     --resource-group $RESOURCE_GROUP \
